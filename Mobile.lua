@@ -1,7 +1,7 @@
 local Decompile = {
   WaitDecompile = false,
-  getupval = true,
-  getcons = false
+  getupvalues = false,
+  getconstants = false
 }
 
 local Variaveis = {}
@@ -79,7 +79,7 @@ function Decompile:Type(part, Lines)
     Script = Script .. firstName .. Variavel2
   elseif type == "function" then
     Script = Script .. "function()"
-    if Decompile.getupval then
+    if Decompile.getupvalues then
       local upvalue, constant
       pcall(function()
         if getupvalues and #getupvalues(part) >= 1 then
@@ -94,7 +94,7 @@ function Decompile:Type(part, Lines)
         end
       end)
     end
-    if Decompile.getcons then
+    if Decompile.getconstants then
       pcall(function()
         if getconstants and #getconstants(part) >= 1 then
           for a,b in pairs(getconstants(part)) do Wait()
