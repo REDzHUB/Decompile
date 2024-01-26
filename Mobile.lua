@@ -1,7 +1,8 @@
 local Decompile = {
   WaitDecompile = false,
   getupvalues = false,
-  getconstants = false
+  getconstants = false,
+  setclipboard = true
 }
 
 local Variaveis = {}
@@ -173,7 +174,9 @@ function Decompile.new(part)
     Var = Var .. "local " .. Val .. ' = game:GetService("' .. Val .. '")' .. "\n"
   end)
   
-  setclipboard(Var .. "\n" .. Script .. "\n" .. "}")
+  if Decompile.setclipboard then
+    setclipboard(Var .. "\n" .. Script .. "\n" .. "}")
+  end
   return (Var .. "\n" .. Script .. "\n" .. "}")
 end
 
