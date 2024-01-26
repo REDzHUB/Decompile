@@ -150,7 +150,7 @@ function Decompile.new(part)
     return partGet
   end
   
-  local Script, Lines, IsFirst = typeof(part) == "Instance" and "local Script = " .. part:GetFullName() .. "\n\n" or "", "  "
+  local Script, Lines, IsFirst = typeof(part) == "Instance" and "local Script = " .. Decompile:Type(part) .. "\n\n" or "", "  "
   Script = Script .. "local Decompile = {"
   
   if typeof(GetClass(part)) == "table" then
