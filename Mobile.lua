@@ -15,6 +15,14 @@ local function Wait()
   end
 end
 
+local function GetParams(func)
+  local Vals = {}
+  for ind = 1, getinfo(func).numparams do
+    table.insert(Vals, "Val" .. tostring(ind))
+  end
+  return table.concat(Vals, ", ")
+end
+
 function Decompile:Type(part, Lines)
   local type = typeof(part)
   local Script = "", ""
@@ -86,7 +94,7 @@ function Decompile:Type(part, Lines)
     end
     Script = Script .. firstName .. Variavel2
   elseif type == "function" then
-    Script = Script .. "function()"
+    Script = Script .. "function(" .. GetParams(part) .. ")"
     if Decompile.getupvalues then
       local upvalue, constant
       pcall(function()
