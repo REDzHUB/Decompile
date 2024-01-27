@@ -186,7 +186,7 @@ function Decompile.new(part)
   
   local Var = ""
   table.foreach(Variaveis, function(_,Val)
-    Var = Var .. "local " .. Val .. "\ = game:GetService(\"" .. Val .. "\"\)\n"
+    Var = Var .. "local " .. Val .. "\ = game:GetService(\"" .. Val .. "\")\n"
   end)
   
   if Decompile.setclipboard then
