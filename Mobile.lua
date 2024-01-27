@@ -6,13 +6,12 @@ local Decompile = {
 }
 
 local Variaveis = {}
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
 local function Wait()
   if Decompile.WaitDecompile then
-    RunService.Heartbeat:Wait()
+    task.wait()
   end
 end
 
@@ -44,6 +43,7 @@ function Decompile:Type(part, Lines)
     for a,b in pairs(Separator) do
       if not first then
         if not table.find(Variaveis, b) then
+          b = b:gsub(" ", "")
           if b == "Workspace" then
             firstName = "workspace"
           else
@@ -54,22 +54,29 @@ function Decompile:Type(part, Lines)
           firstName = b
         end
       else
-        if b == Player.Name then
+        if b == Player.Name and firstName == "Players" then
           Variavel2 = Variavel2 .. ".LocalPlayer"
-        elseif b == "Camera" then
+        elseif b == Player.Name and firstName == "workspace" then
+          table.insert(Variaveis, "Players")
+          Variavel2 = Variavel2 .. "[Players.LocalPlayer.Name]"
+        elseif b == "Camera" and firstName == "workspace" then
           Variavel2 = Variavel2 .. ".CurrentCamera"
-        elseif string.find(b, " ")
-        or string.find(b, "0")
-        or string.find(b, "1")
-        or string.find(b, "2")
-        or string.find(b, "3")
-        or string.find(b, "4")
-        or string.find(b, "5")
-        or string.find(b, "6")
-        or string.find(b, "7")
-        or string.find(b, "8")
-        or string.find(b, "9")
-        or string.find(b, "_") then
+        elseif b:find(" ")
+        or b:find("0")
+        or b:find("1")
+        or b:find("2")
+        or b:find("3")
+        or b:find("4")
+        or b:find("5")
+        or b:find("6")
+        or b:find("7")
+        or b:find("8")
+        or b:find("9")
+        or b:find("_")
+        or b:find("-")
+        or b:find("+")
+        or b:find("/")
+        or b:find("|") then
           Variavel2 = Variavel2 .. '["' .. b .. '"]'
         else
           Variavel2 = Variavel2 .. "." .. b
@@ -83,7 +90,7 @@ function Decompile:Type(part, Lines)
     if Decompile.getupvalues then
       local upvalue, constant
       pcall(function()
-        if getupvalues and #getupvalues(part) >= 1 then
+        if getupvalues and #getupvalues(part) >= 0 then
           for a,b in pairs(getupvalues(part)) do Wait()
             
             if not upvalue then Script = Script .. "\n" .. Lines .. "  local upvalues = {\n" .. Lines .. "    "
@@ -97,7 +104,7 @@ function Decompile:Type(part, Lines)
     end
     if Decompile.getconstants then
       pcall(function()
-        if getconstants and #getconstants(part) >= 1 then
+        if getconstants and #getconstants(part) > 0 then
           for a,b in pairs(getconstants(part)) do Wait()
             
             if not constant then Script = Script .. "\n" .. Lines .. "  local constants = {\n" .. Lines .. "    "
@@ -171,13 +178,13 @@ function Decompile.new(part)
   
   local Var = ""
   table.foreach(Variaveis, function(_,Val)
-    Var = Var .. "local " .. Val .. ' = game:GetService("' .. Val .. '")' .. "\n"
+    Var = Var .. "local " .. Val .. "\ = game:GetService(\"" .. Val .. "\"\)\n"
   end)
   
   if Decompile.setclipboard then
-    setclipboard(Var .. "\n" .. Script .. "\n" .. "}")
+    setclipboard(Var .. "\n" .. Script .. "\n}")
   end
-  return (Var .. "\n" .. Script .. "\n" .. "}")
+  return (Var .. "\n" .. Script .. "\n}")
 end
 
 return Decompile
