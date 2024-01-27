@@ -68,9 +68,6 @@ function Decompile:Type(part, Lines)
         elseif b == Player.Name and firstName == "workspace" then
           table.insert(Variaveis, "Players")
           Variavel2, firstName = "Players.LocalPlayer.Character", ""
-        elseif b:find(Player.Name) and firstName == "workspace" then
-          table.insert(Variaveis, "Players")
-          Variavel2 = Variavel2 .. "\[Player.Name .. \"" .. b:gsub(Players.LocalPlayer.Name, "") .. "\"\]"
         elseif b == "Camera" and firstName == "workspace" then
           Variavel2 = Variavel2 .. ".CurrentCamera"
         elseif b:find(" ")
