@@ -23,7 +23,7 @@ local function GetParams(func)
   return table.concat(Vals, ", ")
 end
 
-function Decompile:Type(part, Lines)
+function Decompile:Type(part, Lines)Wait()
   local type = typeof(part)
   local Script = "", ""
   
@@ -100,7 +100,7 @@ function Decompile:Type(part, Lines)
       local Count, upvalue, constant = false
       pcall(function()
         if getupvalues and #getupvalues(part) >= 0 then vals = true
-          for a,b in pairs(getupvalues(part)) do Wait()
+          for a,b in pairs(getupvalues(part)) do
             
             if not upvalue then Script = Script .. "\n" .. Lines .. "  local upvalues = {\n" .. Lines .. "    "
             else Script = Script .. ",\n" .. Lines .. "    " end
@@ -114,7 +114,7 @@ function Decompile:Type(part, Lines)
     if Decompile.getconstants then
       pcall(function()
         if getconstants and #getconstants(part) > 0 then vals = true
-          for a,b in pairs(getconstants(part)) do Wait()
+          for a,b in pairs(getconstants(part)) do
             if not constant then Script = Script .. "\n" .. Lines .. "  local constants = {\n" .. Lines .. "    "
             else Script = Script .. ",\n" .. Lines .. "    " end
             Script = Script .. "[" .. a .. "] = " .. Decompile:Type(b, Lines .. "    ")
