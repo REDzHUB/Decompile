@@ -97,7 +97,7 @@ function Decompile:Type(part, Lines)Wait()
   elseif type == "function" then
     Script = Script .. "function(" .. GetParams(part) .. ")"
     if Decompile.getupvalues then
-      local Count, upvalue, constant = false
+      local vals, upvalue, constant = false
       pcall(function()
         if getupvalues and #getupvalues(part) >= 0 then vals = true
           for a,b in pairs(getupvalues(part)) do
