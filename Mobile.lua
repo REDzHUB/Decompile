@@ -23,6 +23,15 @@ local function GetParams(func)
   return table.concat(Vals, ", ")
 end
 
+local function GetColorRGB(Color)
+  local R, G, B
+  local split = tostring(Color):gsub(" ", ""):split(",")
+  R = math.floor(tonumber(split[1]) * 255)
+  G = math.floor(tonumber(split[2]) * 255)
+  B = math.floor(tonumber(split[3]) * 255)
+  return (tostring(R) .. ", " .. tostring(G) .. ", " .. tostring(B))
+end
+
 function Decompile:Type(part, Lines)Wait()
   local type = typeof(part)
   local Script = "", ""
@@ -96,40 +105,43 @@ function Decompile:Type(part, Lines)Wait()
     Script = Script .. firstName .. Variavel2
   elseif type == "function" then
     Script = Script .. "function(" .. GetParams(part) .. ")"
+    local HaveVal, constants, upvalues = false, "", ""
+    
     if Decompile.getupvalues then
-      local vals, upvalue, constant = false
-      pcall(function()
-        if getupvalues and #getupvalues(part) >= 0 then vals = true
-          for a,b in pairs(getupvalues(part)) do
-            
-            if not upvalue then Script = Script .. "\n" .. Lines .. "  local upvalues = {\n" .. Lines .. "    "
-            else Script = Script .. ",\n" .. Lines .. "    " end
-            Script = Script .. "[" .. a .. "] = " .. Decompile:Type(b, Lines .. "    ")
-            upvalue = true
-          end
-          Script = Script .. "\n" .. Lines .. "  }"
+      local uptable = getupvalues and getupvalues(part)
+      
+      if uptable and typeof(uptable) == "table" and #uptable > 0 then
+        upvalues, HaveVal = upvalues .. "\n" .. Lines .. "  local upvalues = {", true
+        local FirstVal
+        for ind, val in pairs(uptable) do
+          if FirstVal then upvalues = upvalues .. ","end
+          upvalues = upvalues .. "\n" .. Lines .. "    [" .. tostring(ind) .. "] = " .. Decompile:Type(val, Lines .. "    ")
+          FirstVal = true
         end
-      end)
+        upvalues = upvalues .. "\n" .. Lines .. "  }"
+      end
     end
     if Decompile.getconstants then
-      pcall(function()
-        if getconstants and #getconstants(part) > 0 then vals = true
-          for a,b in pairs(getconstants(part)) do
-            if not constant then Script = Script .. "\n" .. Lines .. "  local constants = {\n" .. Lines .. "    "
-            else Script = Script .. ",\n" .. Lines .. "    " end
-            Script = Script .. "[" .. a .. "] = " .. Decompile:Type(b, Lines .. "    ")
-            constant = true
-          end
-          Script = Script .. "\n" .. Lines .. "  }"
+      local uptable = getconstants and getconstants(part)
+      
+      if uptable and typeof(uptable) == "table" and #uptable > 0 then
+        constants, HaveVal = constants .. "\n" .. Lines .. "  local constants = {", true
+        local FirstVal
+        for ind, val in pairs(uptable) do
+          if FirstVal then constants = constants .. ","end
+          constants = constants .. "\n" .. Lines .. "    [" .. tostring(ind) .. "] = " .. Decompile:Type(val, Lines .. "    ")
+          FirstVal = true
         end
-      end)
+        constants = constants .. "\n" .. Lines .. "  }"
+      end
     end
-    local An = vals and "\n" .. Lines or ""
-    Script = Script .. An .. "end"
+    
+    local endType = HaveVal and "\n" .. Lines .. "end" or "end"
+    Script = Script .. upvalues .. constants .. endType
   elseif type == "Vector3" then
     Script = Script .. "Vector3.new(" .. tostring(part) .. ")"
   elseif type == "Color3" then
-    Script = Script .. "Color3.new(" .. tostring(part) .. ")"
+    Script = Script .. "Color3.fromRGB(" .. GetColorRGB(part) .. ")"
   elseif type == "CFrame" then
     Script = Script .. "CFrame.new(" .. tostring(part) .. ")"
   elseif type == "BrickColor" then
