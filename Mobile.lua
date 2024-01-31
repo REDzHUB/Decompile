@@ -1,8 +1,19 @@
-local Decompile = {
+local Decompile, Libraries = {
   WaitDecompile = false,
   getupvalues = false,
   getconstants = false,
   setclipboard = true
+}, {
+  "bit32",
+  "buffer",
+  "coroutine",
+  "debug",
+  "math",
+  "os",
+  "string",
+  "table",
+  "task",
+  "utf8"
 }
 
 local Variaveis = {}
@@ -16,9 +27,12 @@ local function Wait()
 end
 
 local function GetParams(func)
-  local Vals = {}
-  for ind = 1, getinfo(func).numparams do
+  local Info, Vals = getinfo(func), {}
+  for ind = 1, Info.numparams do
     table.insert(Vals, "Val" .. tostring(ind))
+  end
+  if Info.is_vararg > 0 then
+    table.insert(Vals, "...")
   end
   return table.concat(Vals, ", ")
 end
@@ -62,7 +76,9 @@ function Decompile:Type(part, Lines)Wait()
       if not first then
         if not table.find(Variaveis, b) then
           b = b:gsub(" ", "")
-          if b == "Workspace" then
+          if not game:FindService(b) then
+            return b .. " --[[ nil Instance ]]"
+          elseif b == "Workspace" then
             firstName = "workspace"
           else
             firstName = b
@@ -138,20 +154,24 @@ function Decompile:Type(part, Lines)Wait()
     
     local endType = HaveVal and "\n" .. Lines .. "end" or "end"
     Script = Script .. upvalues .. constants .. endType
-  elseif type == "Vector3" then
-    Script = Script .. "Vector3.new(" .. tostring(part) .. ")"
-  elseif type == "Color3" then
-    Script = Script .. "Color3.fromRGB(" .. GetColorRGB(part) .. ")"
   elseif type == "CFrame" then
     Script = Script .. "CFrame.new(" .. tostring(part) .. ")"
+  elseif type == "Color3" then
+    Script = Script .. "Color3.fromRGB(" .. GetColorRGB(part) .. ")"
   elseif type == "BrickColor" then
     Script = Script .. 'BrickColor.new("' .. tostring(part) .. '")'
   elseif type == "Vector2" then
     Script = Script .. "Vector2.new(" .. tostring(part) .. ")"
-  elseif type == "UDim2" then
-    Script = Script .. "UDim2.new(" .. tostring(part) .. ")"
+  elseif type == "Vector3" then
+    Script = Script .. "Vector3.new(" .. tostring(part) .. ")"
   elseif type == "UDim" then
     Script = Script .. "UDim.new(" .. tostring(part) .. ")"
+  elseif type == "UDim2" then
+    Script = Script .. "UDim2.new(" .. tostring(part) .. ")"
+  elseif type == "TweenInfo" then
+    Script = Script .. "TweenInfo.new(" .. tostring(part) .. ")"
+  elseif type == "Axes" then
+    Script = Script .. "Axes.new(" .. tostring(part) .. ")"
   else
     if tostring(part):find("inf") then
       Script = Script .. "math.huge"
@@ -210,4 +230,5 @@ function Decompile.new(part)
   return (Var .. "\n" .. Script .. "\n}")
 end
 
+Decompile.new(teste)
 return Decompile
