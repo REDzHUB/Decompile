@@ -228,6 +228,8 @@ function Decompile.new(part)
   
   if Metodo then
     Script = Script:format("local Method = " .. Metodo .. "\n")
+  else
+    Script = Script:format("")
   end
   
   local Var, list = "", {}
