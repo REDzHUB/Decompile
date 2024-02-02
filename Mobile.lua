@@ -195,12 +195,11 @@ function Decompile.new(part)
         return getsenv(partGet)
       elseif partGet:IsA("ModuleScript") then
         local Script = require(partGet)
-        Metodo = "{require"
+        Metodo = "require"
         if typeof(Script) == "function" then
           Metodo = Metodo .. ", getupvalues"
           return getupvalues(Script)
         end
-        Metodo = Metodo .. "}"
         return Script
       end
     end
