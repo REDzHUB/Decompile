@@ -50,7 +50,11 @@ function Decompile:Type(part, Lines)Wait()
   local type = typeof(part)
   local Script = "", ""
   
-  if type == "table" then
+  if type == "boolean" then
+    Script = Script .. tostring(part)
+  elseif type == "nil" then
+    Script = Script .. "nil"
+  elseif type == "table" then
     Script, IsFirst = Script .. "{", false
     
     for a,b in pairs(part) do
@@ -76,7 +80,7 @@ function Decompile:Type(part, Lines)Wait()
       if not first then
         if not table.find(Variaveis, b) then
           b = b:gsub(" ", "")
-          if not game:FindService(b) then
+          if not game:FindFirstChild(b) then
             return b .. " --[[ nil Instance ]]"
           elseif b == "Workspace" then
             firstName = "workspace"
@@ -189,10 +193,11 @@ function Decompile.new(part)
       if partGet:IsA("LocalScript") then
         return getsenv(partGet)
       elseif partGet:IsA("ModuleScript") then
-        if typeof(require(partGet)) == "function" then
-          return getupvalues(require(partGet))
+        local Script = require(partGet)
+        if typeof(Script) == "function" then
+          return getupvalues(Script)
         end
-        return require(partGet)
+        return Script
       end
     end
     return partGet
@@ -230,5 +235,4 @@ function Decompile.new(part)
   return (Var .. "\n" .. Script .. "\n}")
 end
 
-Decompile.new(teste)
 return Decompile
