@@ -60,7 +60,7 @@ function Decompile:Type(part, Lines)Wait()
     for a,b in pairs(part) do
       if IsFirst then Script = Script .. ","end
       Script = Script .. "\n"
-      if tonumber(a) then
+      if tonumber(a) or tostring(a):len() < 1 then
         Script = Script .. Lines .. "  " .. '["' .. a .. '"] = '
       else
         Script = Script .. Lines .. "  " .. tostring(a).. " = "
@@ -214,7 +214,7 @@ function Decompile.new(part)
     for a,b in pairs(PartClass) do
       if IsFirst then Script = Script .. ","end
       Script = Script .. "\n"
-      if tonumber(a) then
+      if tonumber(a) or tostring(a):len() < 1 then
         Script = Script .. Lines .. '["' .. a .. '"] = '
       else
         Script = Script .. Lines .. tostring(a) .. " = "
