@@ -187,27 +187,32 @@ function Decompile:Type(part, Lines)Wait()
 end
 
 function Decompile.new(part)
-  Variaveis = {}
+  local Metodo;Variaveis = {}
   local function GetClass(partGet)
     if typeof(partGet) == "Instance" then
       if partGet:IsA("LocalScript") then
+        Metodo = "getsenv"
         return getsenv(partGet)
       elseif partGet:IsA("ModuleScript") then
         local Script = require(partGet)
+        Metodo = "{require"
         if typeof(Script) == "function" then
+          Metodo = Metodo .. ", getupvalues"
           return getupvalues(Script)
         end
+        Metodo = Metodo .. "}"
         return Script
       end
     end
     return partGet
   end
   
-  local Script, Lines, IsFirst = typeof(part) == "Instance" and "local Script = " .. Decompile:Type(part) .. "\n\n" or "", "  "
+  local Script, Lines, IsFirst = typeof(part) == "Instance" and "%slocal Script = " .. Decompile:Type(part) .. "\n\n" or "", "  "
   Script = Script .. "local Decompile = {"
   
-  if typeof(GetClass(part)) == "table" then
-    for a,b in pairs(GetClass(part)) do
+  local PartClass = GetClass(part)
+  if typeof(PartClass) == "table" then
+    for a,b in pairs(PartClass) do
       if IsFirst then Script = Script .. ","end
       Script = Script .. "\n"
       if tonumber(a) then
@@ -219,7 +224,11 @@ function Decompile.new(part)
       IsFirst = true
     end
   else
-    Script = Script .. "\n" .. Lines .. "[\"1\"] = " .. Decompile:Type(GetClass(part), Lines)
+    Script = Script .. "\n" .. Lines .. "[\"1\"] = " .. Decompile:Type(PartClass, Lines)
+  end
+  
+  if Metodo then
+    Script = Script:format("local Method = " .. Metodo .. "\n")
   end
   
   local Var, list = "", {}
