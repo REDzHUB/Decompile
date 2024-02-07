@@ -26,6 +26,26 @@ local function Wait()
   end
 end
 
+local function IsInvalid(str)
+  if str:find(" ")
+  or str:find("0")
+  or str:find("1")
+  or str:find("2")
+  or str:find("3")
+  or str:find("4")
+  or str:find("5")
+  or str:find("6")
+  or str:find("7")
+  or str:find("8")
+  or str:find("9")
+  or str:find("-")
+  or str:find("+")
+  or str:find("/")
+  or str:find("|") then
+    return true
+  end
+end
+
 local function GetParams(func)
   local Info, Vals = getinfo(func), {}
   for ind = 1, Info.numparams do
@@ -46,6 +66,18 @@ local function GetColorRGB(Color)
   return (tostring(R) .. ", " .. tostring(G) .. ", " .. tostring(B))
 end
 
+local function GetIndex(Index)
+  if tostring(Index):len() < 1 then
+    return "[\"" .. tostring(Index) .. "\"]"
+  elseif tonumber(Index) then
+    return "[" .. tostring(Index) .. "]"
+  elseif IsInvalid(tostring(Index)) then
+    return "[\"" .. tostring(Index) .. "\"]"
+  else
+    return tostring(Index)
+  end
+end
+
 function Decompile:Type(part, Lines)Wait()
   local type = typeof(part)
   local Script = "", ""
@@ -60,11 +92,7 @@ function Decompile:Type(part, Lines)Wait()
     for a,b in pairs(part) do
       if IsFirst then Script = Script .. ","end
       Script = Script .. "\n"
-      if tonumber(a) or tostring(a):len() < 1 then
-        Script = Script .. Lines .. "  " .. '["' .. a .. '"] = '
-      else
-        Script = Script .. Lines .. "  " .. tostring(a).. " = "
-      end
+      Script = Script .. Lines .. "  " .. GetIndex(a) .. " = "
       Script = Script .. Decompile:Type(b, Lines .. "  ")
       IsFirst = true
     end
@@ -99,22 +127,7 @@ function Decompile:Type(part, Lines)Wait()
           Variavel2, firstName = "Players.LocalPlayer.Character", ""
         elseif b == "Camera" and firstName == "workspace" then
           Variavel2 = Variavel2 .. ".CurrentCamera"
-        elseif b:find(" ")
-        or b:find("0")
-        or b:find("1")
-        or b:find("2")
-        or b:find("3")
-        or b:find("4")
-        or b:find("5")
-        or b:find("6")
-        or b:find("7")
-        or b:find("8")
-        or b:find("9")
-        or b:find("_")
-        or b:find("-")
-        or b:find("+")
-        or b:find("/")
-        or b:find("|") then
+        elseif IsInvalid(b) then
           Variavel2 = Variavel2 .. '["' .. b .. '"]'
         else
           Variavel2 = Variavel2 .. "." .. b
@@ -214,11 +227,7 @@ function Decompile.new(part)
     for a,b in pairs(PartClass) do
       if IsFirst then Script = Script .. ","end
       Script = Script .. "\n"
-      if tonumber(a) or tostring(a):len() < 1 then
-        Script = Script .. Lines .. '["' .. a .. '"] = '
-      else
-        Script = Script .. Lines .. tostring(a) .. " = "
-      end
+      Script = Script .. Lines .. GetIndex(a) .. ' = '
       Script = Script .. Decompile:Type(b, Lines)
       IsFirst = true
     end
