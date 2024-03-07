@@ -65,34 +65,55 @@ local function GetIndex(Index)
   end
 end
 
+local function GetService(part)
+  if part.Name == "Workspace" then return "workspace" end
+  local Class = (part.ClassName:gsub(" ", ""))
+  
+  table.insert(Variaveis, Class)
+  return Class
+end
+
 local function GetFullName(part)
-  if part and part == game then return "game --[[ Data Model ]]" end
-  if not part.Parent or part.Parent ~= game then return part.Name .. " --[[ Nil Instance ]]" end
-  local Split = string.split(part:GetFullName(), ".")
-  local Names, LastName, FirstName = {}, ""
-  for _,Val in (Split) do
-    if not FirstName then
-      FirstName = Val:gsub(" ", "")
-      if FirstName == "Workspace" then
-        FirstName = "workspace"
-        Val = "workspace"
+  if part and part == game then return "game --[[ DataModel ]]" end
+  
+  local Parent = part.Parent
+  
+  if Parent and Parent == game then GetService(part) end
+  if not part or not Parent then return part.Name .. " --[[ Nil Instance ]]" end
+  
+  local FullName = part:GetFullName():split(".")
+  
+  local Names, LastName, Service = {}
+  
+  for _,val in pairs(FullName) do
+    local Name
+    if not Service then
+      if val == "Workspace" then
+        Service = "workspace"
       else
-        table.insert(Variaveis, FirstName)
+        Service = val:gsub(" ", "")
       end
-      table.insert(Names, FirstName)
+      Name = Service
     else
-      if Val == Player.Name and LastName == "Players" then
-        Val = "LocalPlayer"
-      elseif Val == Player.Name and FirstName == "workspace" then
+      if val == Player.Name and Service == "workspace" then
         Names = {"Players.LocalPlayer.Character"}
         table.insert(Variaveis, "Players")
-        Val = ""
-      end
-      if Val then
-        table.insert(Names, IsInvalid(Val) and "[\"" .. Val .. "\"]" or "." .. Val)
+      elseif val == Player.Name and LastName == "Players" then
+        Name = ".LocalPlayer"
+      elseif val == "Camera" and LastName == "workspace" then
+        Name = ".CurrentCamera"
+      else
+        if IsInvalid(val) then
+          Name = "[\"" .. val .. "\"]"
+        else
+          Name = "." .. val
+        end
       end
     end
-    LastName = Val
+    if Name then
+      table.insert(Names, Name)
+      LastName = Name
+    end
   end
   return table.concat(Names)
 end
@@ -163,7 +184,7 @@ function Decompile:GetType(part, Lines, Find)
   elseif type == "Color3" then
     return "Color3.fromRGB(" .. GetColorRGB(part) .. ")"
   elseif type == "BrickColor" then
-    return 'BrickColor.new("' .. tostring(part) .. '")'
+    return "BrickColor.new(\"" .. tostring(part) .. "\")"
   elseif type == "Vector2" then
     return "Vector2.new(" .. tostring(part) .. ")"
   elseif type == "Vector3" then
