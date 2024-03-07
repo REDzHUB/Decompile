@@ -66,7 +66,8 @@ local function GetIndex(Index)
 end
 
 local function GetFullName(part)
-  if not part.Parent then return part.Name .. " --[[ Nil Instance ]]" end
+  if part and part == game then return "game --[[ Data Model ]]" end
+  if not part.Parent or part.Parent ~= game then return part.Name .. " --[[ Nil Instance ]]" end
   local Split = string.split(part:GetFullName(), ".")
   local Names, LastName, FirstName = {}, ""
   for _,Val in (Split) do
@@ -158,23 +159,23 @@ function Decompile:GetType(part, Lines, Find)
   elseif type == "string" then
     return "\"" .. part .. "\""
   elseif type == "CFrame" then
-    Script = Script .. "CFrame.new(" .. tostring(part) .. ")"
+    return "CFrame.new(" .. tostring(part) .. ")"
   elseif type == "Color3" then
-    Script = Script .. "Color3.fromRGB(" .. GetColorRGB(part) .. ")"
+    return "Color3.fromRGB(" .. GetColorRGB(part) .. ")"
   elseif type == "BrickColor" then
-    Script = Script .. 'BrickColor.new("' .. tostring(part) .. '")'
+    return 'BrickColor.new("' .. tostring(part) .. '")'
   elseif type == "Vector2" then
-    Script = Script .. "Vector2.new(" .. tostring(part) .. ")"
+    return "Vector2.new(" .. tostring(part) .. ")"
   elseif type == "Vector3" then
-    Script = Script .. "Vector3.new(" .. tostring(part) .. ")"
+    return "Vector3.new(" .. tostring(part) .. ")"
   elseif type == "UDim" then
-    Script = Script .. "UDim.new(" .. tostring(part) .. ")"
+    return "UDim.new(" .. tostring(part) .. ")"
   elseif type == "UDim2" then
-    Script = Script .. "UDim2.new(" .. tostring(part) .. ")"
+    return "UDim2.new(" .. tostring(part) .. ")"
   elseif type == "TweenInfo" then
-    Script = Script .. "TweenInfo.new(" .. tostring(part) .. ")"
+    return "TweenInfo.new(" .. tostring(part) .. ")"
   elseif type == "Axes" then
-    Script = Script .. "Axes.new(" .. tostring(part) .. ")"
+    return "Axes.new(" .. tostring(part) .. ")"
   end
   return tostring(part)
 end
