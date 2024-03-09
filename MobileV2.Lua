@@ -10,7 +10,6 @@ local Decompile = {
 }
 
 local DecInfo = {}
-
 local Variaveis = {}
 
 local function IsInvalid(str)
@@ -178,6 +177,11 @@ function Decompile:GetType(part, Lines, Find)
   elseif type == "boolean" then
     return tostring(part)
   elseif type == "string" then
+    if part:find("\n") then
+      return "[[" .. part .. "]]"
+    elseif part:find("\"") then
+      return "'" .. part .. "'"
+    end
     return "\"" .. part .. "\""
   elseif type == "CFrame" then
     return "CFrame.new(" .. tostring(part) .. ")"
