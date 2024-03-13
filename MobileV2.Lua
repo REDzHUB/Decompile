@@ -11,6 +11,14 @@ local Decompile = {
 
 local DecInfo = {}
 local Variaveis = {}
+local upvalues = {}
+local checkuv = {}
+
+local function sortav(newt)
+  table.sort(newt, function(old, new)
+    return (old:len() > new:len())
+  end)
+end
 
 local function IsInvalid(str)
   if str:find(" ")
@@ -52,23 +60,42 @@ local function GetColorRGB(Color)
   return (tostring(R) .. ", " .. tostring(G) .. ", " .. tostring(B))
 end
 
+local function iupvals(t)
+  local vals = {}
+  for i,v in pairs(t) do
+    local f = table.find(upvalues, v)
+    if not f then
+      table.insert(vals, "v" .. tostring(i))
+      table.insert(upvalues, v)
+    else
+      table.insert(vals, "v" .. tostring(f))
+    end
+  end
+  return "{" .. table.concat(vals, ", ") .. "}"
+end
+
 local function GetIndex(Index)
   if tostring(Index):len() < 1 then
     return "[\"" .. tostring(Index) .. "\"] = "
   elseif tonumber(Index) then
     return "[" .. tostring(Index) .. "] = "
+  elseif typeof(Index) == "Instance" then
+    if Index and Index == game then
+      return "[game] = "
+    else
+      return "[game." .. Index:GetFullName() .. "] = "
+    end
   elseif IsInvalid(tostring(Index)) then
     return "[\"" .. tostring(Index) .. "\"] = "
-  else
-    return tostring(Index) .. " = "
   end
+  return tostring(Index) .. " = "
 end
 
 local function GetService(part)
   if part.Name == "Workspace" then return "workspace" end
   local Class = (part.ClassName:gsub(" ", ""))
   
-  table.insert(Variaveis, Class)
+  Variaveis[Class] = false
   return Class
 end
 
@@ -91,16 +118,21 @@ local function GetFullName(part)
         Service = "workspace"
       else
         Service = val:gsub(" ", "")
+        Variaveis[Service] = false
       end
       Name = Service
     else
       if val == Player.Name and Service == "workspace" then
-        Names = {"Players.LocalPlayer.Character"}
-        table.insert(Variaveis, "Players")
+        Variaveis["Players"] = false
+        Variaveis["Player"] = "Players.LocalPlayer"
+        Names = {"Player.Character"}
       elseif val == Player.Name and LastName == "Players" then
-        Name = ".LocalPlayer"
+        Variaveis["Players"] = false
+        Variaveis["Player"] = "Players.LocalPlayer"
+        Names = {"Player"}
       elseif val == "Camera" and LastName == "workspace" then
-        Name = ".CurrentCamera"
+        Variaveis["CurrentCamera"] = "workspace.CurrentCamera"
+        Names = {"CurrentCamera"}
       else
         if IsInvalid(val) then
           Name = "[\"" .. val .. "\"]"
@@ -117,17 +149,28 @@ local function GetFullName(part)
   return table.concat(Names)
 end
 
+local function gettcount(newt)
+  local vals = {}
+  for ind,val in pairs(newt) do
+    table.insert(vals, val)
+  end
+  return #vals
+end
+
 local function CheckFind(Find, Val)
   return typeof(Find) == typeof(Val) and Find == Val or type(Val) == "table" or type(Val) == "function"
 end
 
-local DupVals = {}
-
+-- local DV = {}
 function Decompile:GetType(part, Lines, Find)
   local type = typeof(part)
   if type == "table" then
-    if Decompile.antiloop and table.find(DupVals, part) then return "{} --[[ Anti Loop < Table > ]]" end
-    table.insert(DupVals, part)
+    -- if Decompile.antiloop then if table.find(DV, part) then return "{} --[[ Anti Loop ]]" end table.insert(DV, part) end
+    
+    if Decompile.antiloop then
+      if #part < 1 and gettcount(part) > 0 then return "{} --[[ Possible Loop ]]" end
+    end
+    
     local Vals = {}
     local Script = "{\n"
     for Ind,Val in pairs(part) do
@@ -135,20 +178,22 @@ function Decompile:GetType(part, Lines, Find)
         table.insert(Vals, "  " .. Lines .. GetIndex(Ind) .. Decompile:GetType(Val, "  " .. Lines, Find))
       end
     end
+    
     if #Vals < 1 then return "{}" end
     Script = Script .. table.concat((Vals), ",\n")
     return Script .. "\n" .. Lines .. "}"
   elseif type == "function" then
-    if Decompile.antiloop and table.find(DupVals, part) then return "function(" .. GetParams(part) .. ")end --[[ Anti Loop < Function > ]]"end
-    table.insert(DupVals, part)
-    local Script = "function(" .. GetParams(part) .. ")"
+    local name = getinfo(part).name
+    local fname = name and " --[[ " .. name .. " ]]" or ""
+    local Script = "function(" .. GetParams(part) .. ")" .. fname
     local UpVal, Cons
     if Decompile.getupvalues then
       pcall(function()
         local upvals = getupvalues(part)
         if #upvals > 0 then
+          local ind = iupvals(upvals)
+          Script = Script .. "\n  " .. Lines .. "local upvalues = " .. ind .. "\n"
           UpVal = true
-          Script = Script .. "\n  " .. Lines .. "local upvalues = " .. Decompile:GetType(upvals, Lines .. "  ", Find) .. "\n"
         end
       end)
     end
@@ -172,6 +217,8 @@ function Decompile:GetType(part, Lines, Find)
     local Script = tostring(part)
     if Script == "inf" then
       return "math.huge"
+    elseif Script == tostring(Player.UserId) then
+      return Script .. " --[[ UserId ]]"
     end
     return Script
   elseif type == "boolean" then
@@ -208,69 +255,93 @@ end
 function Decompile.new(Configs)
   local part = type(Configs) == "table" and Configs.Part or Configs
   local Find = type(Configs) == "table" and Configs.Find or nil
-  DecInfo = {
-    part = part,
-    type = typeof(part)
-  }
+  DecInfo = ({Script = part, type = typeof(part)})
   
   local Method
-  Variaveis = {}
+  Variaveis, upvalues, checkuv = {}, {}, {}
   if typeof(part) == "Instance" then
     if part.ClassName == "ModuleScript" then
       part = require(part)
       Method = "require"
-      if type(part) == "function" then
-        part = getupvalues(part)
-        Method = Method .. ", getupvalues"
-      end
     elseif part.ClassName == "LocalScript" then
       part = getsenv(part)
       Method = "getsenv"
     else
-      error("invalid argument #1 to 'new' (Expected ModuleScript/LocalScript)")
+      error("invalid argument #1 to 'new' (Expected ModuleScript/LocalScript, got " .. type(part) .. ")")
     end
   elseif type(part) == "table" then
     part = part
   elseif type(part) == "function" then
-    part = {part}
+    part = part
   else
-    error("invalid argument #1 to 'new' (Expected Table/Instance)")
+    -- error("invalid argument #1 to 'new' (Expected table/function/Instance, got " .. type(part) .. ")")
   end
   
-  local Script = "local Decompile = {"
+  local Script = "local Decompile = "
   local Lines, First = "  "
   
-  local Vals = {}
-  if Decompile.getgc and typeof(DecInfo.part) == "Instance" then
-    local garbage = getgc(true)
-    for _,val in (garbage) do
+  local garbage, info = {}
+  
+  if Decompile.getgc and DecInfo.type == "Instance" then
+    for _,val in (getgc(true)) do
       if type(val) == "function" then
-        local source = getinfo(val).source
-        if source and source == DecInfo.part then
-          table.insert(part, val)
+        local Script = tostring(DecInfo.Script:GetFullName())
+        local info = getinfo(val)
+        local source, short_src = info.source, info.short_src
+        if source and source == "=" .. Script or short_src and short_src == Script then
+          table.insert(garbage, val)
         end
       end
     end
   end
-  for Ind,Val in (part) do
-    if not Find or CheckFind(Find, Val) then
-      table.insert(Vals, Lines .. GetIndex(Ind) .. Decompile:GetType(Val, Lines, Find))
+  if type(part) == "table" then
+    Script = Script .. "{"
+    
+    local Vals = {}
+    for Ind,Val in (part) do
+      if not Find or CheckFind(Find, Val) then
+        table.insert(Vals, Lines .. GetIndex(Ind) .. Decompile:GetType(Val, Lines, Find))
+      end
+    end
+    Script = Script .. "\n" .. table.concat((Vals), ",\n")
+    Script = Script .. "\n}"
+  else
+    Script = Script .. Decompile:GetType(part, "", Find)
+  end
+  
+  if #garbage > 0 then
+    Script = Script .. "\n\nlocal garbage = " .. Decompile:GetType(garbage, "", Find)
+  end
+  
+  local NewVar, NewVar1 = {}, {}
+  if DecInfo.type == "Instance" then
+    Variaveis["script"] = GetFullName(DecInfo.Script)
+  end
+  for index,value in pairs(Variaveis) do
+    if value then
+      table.insert(NewVar1, "local " .. index .. " = " .. value)
+    else
+      table.insert(NewVar, "local " .. index .. " = game:GetService(\"" .. index .. "\")")
     end
   end
-  Script = Script .. "\n" .. table.concat((Vals), ",\n")
-  Script = Script .. "\n}"
+  local newuv = {}
+  for index,value in pairs(upvalues) do
+    local New = "local v" .. tostring(index) .. " = " .. Decompile:GetType(value, "", Find)
+    table.insert(newuv, New)
+  end
   
-  local NewVar = {}
-  local VarInp = {}
-  for _,Val in (Variaveis) do
-    if not table.find(VarInp, Val) then
-      table.insert(NewVar, "local " .. Val .. " = game:GetService(\"" .. Val .. "\")")
-      table.insert(VarInp, Val)
-    end
+  if #newuv then
+    newuv = table.concat(newuv, "\n") .. "\n\n"
+    Script = "-- upvalues :\n" .. newuv .. Script
+  end
+  if #NewVar1 > 0 then
+    NewVar1 = table.concat(NewVar1, "\n") .. "\n\n"
+    Script = "-- Variaveis :\n" .. NewVar1 .. Script
   end
   if #NewVar > 0 then
+    sortav(NewVar)
     NewVar = table.concat(NewVar, "\n") .. "\n\n"
-    Script = NewVar .. Script
+    Script = "-- Services :\n" .. NewVar .. Script
   end
   
   if Decompile.setclipboard then
