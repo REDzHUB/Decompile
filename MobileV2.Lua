@@ -336,12 +336,12 @@ function Decompile.new(Configs)
   end
   if #NewVar1 > 0 then
     NewVar1 = table.concat(NewVar1, "\n") .. "\n\n"
-    Script = "-- Variaveis :\n" .. NewVar1 .. Script
+    Script = NewVar1 .. Script
   end
   if #NewVar > 0 then
     sortav(NewVar)
     NewVar = table.concat(NewVar, "\n") .. "\n\n"
-    Script = "-- Services :\n" .. NewVar .. Script
+    Script = NewVar .. Script
   end
   
   if Decompile.setclipboard then
