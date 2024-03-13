@@ -330,7 +330,7 @@ function Decompile.new(Configs)
     table.insert(newuv, New)
   end
   
-  if #newuv then
+  if #newuv > 0 then
     newuv = table.concat(newuv, "\n") .. "\n\n"
     Script = "-- upvalues :\n" .. newuv .. Script
   end
